@@ -1,0 +1,395 @@
+import express from "express";
+import http from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import cors from "cors";
+import crypto from "crypto";
+import path from "path";
+
+/* ─── Config ─── */
+const PORT = parseInt(process.env.PORT || "3001", 10);
+const SESSION_TTL_MS = 10 * 60 * 1000; // 10 min
+const MAX_PAIR_ATTEMPTS = 30; // per minute per IP
+const CLEAN_INTERVAL_MS = 15_000;
+
+/* ─── Types ─── */
+interface LifeDropItem {
+  id: string;
+  kind: "file" | "text" | "url" | "note" | "code" | "contact" | "photo";
+  label: string;
+  /** only for file / photo items */
+  fileName?: string;
+  fileSize?: number;
+  fileType?: string;
+  /** for text / url / note / code / contact items */
+  value?: string;
+  /** optional language hint for code snippets */
+  language?: string;
+}
+
+interface Session {
+  sessionId: string;
+  token: string;
+  otp: string; // 6-digit pairing code
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  signalingPath: string;
+  expiresAt: string;
+  createdAt: number;
+  senderWs: WebSocket | null;
+  receiverWs: WebSocket | null;
+  /** LifeDrop: if set, this is a multi-item session */
+  lifedrop?: {
+    title: string;
+    items: LifeDropItem[];
+    totalFileSize: number;
+    burnAfterPickup: boolean;
+    pickedUp: boolean;
+  };
+}
+
+/* ─── State ─── */
+const sessions = new Map<string, Session>();
+const tokenToSession = new Map<string, string>(); // token -> sessionId
+const otpToSession = new Map<string, string>(); // otp -> sessionId
+const ipAttempts = new Map<string, { count: number; resetAt: number }>();
+
+/* ─── Helpers ─── */
+function generateOtp(): string {
+  let code: string;
+  do {
+    code = String(crypto.randomInt(100_000, 999_999));
+  } while (otpToSession.has(code));
+  return code;
+}
+
+function generateId(): string {
+  return crypto.randomBytes(16).toString("base64url");
+}
+
+function generateToken(): string {
+  return crypto.randomBytes(24).toString("base64url");
+}
+
+function getIp(req: express.Request | http.IncomingMessage): string {
+  const forwarded = (req.headers["x-forwarded-for"] as string) || "";
+  return forwarded.split(",")[0].trim() || (req as any).socket?.remoteAddress || "unknown";
+}
+
+function throttle(ip: string): boolean {
+  const now = Date.now();
+  let rec = ipAttempts.get(ip);
+  if (!rec || now > rec.resetAt) {
+    rec = { count: 0, resetAt: now + 60_000 };
+    ipAttempts.set(ip, rec);
+  }
+  rec.count++;
+  return rec.count > MAX_PAIR_ATTEMPTS;
+}
+
+function destroySession(id: string) {
+  const s = sessions.get(id);
+  if (!s) return;
+  tokenToSession.delete(s.token);
+  otpToSession.delete(s.otp);
+  sessions.delete(id);
+  [s.senderWs, s.receiverWs].forEach((ws) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "peer-disconnected", message: "Session expired or closed" }));
+      ws.close();
+    }
+  });
+}
+
+function sessionPayload(s: Session) {
+  return {
+    sessionId: s.sessionId,
+    token: s.token,
+    otp: s.otp,
+    fileName: s.fileName,
+    fileSize: s.fileSize,
+    fileType: s.fileType,
+    signalingPath: s.signalingPath,
+    expiresAt: s.expiresAt,
+    ...(s.lifedrop
+      ? {
+          lifedrop: {
+            title: s.lifedrop.title,
+            items: s.lifedrop.items,
+            totalFileSize: s.lifedrop.totalFileSize,
+            burnAfterPickup: s.lifedrop.burnAfterPickup,
+            pickedUp: s.lifedrop.pickedUp,
+          },
+        }
+      : {}),
+  };
+}
+
+/* ─── Cleanup loop ─── */
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, s] of sessions) {
+    if (now - s.createdAt > SESSION_TTL_MS) destroySession(id);
+    // Burn after pickup
+    if (s.lifedrop?.burnAfterPickup && s.lifedrop?.pickedUp) destroySession(id);
+  }
+}, CLEAN_INTERVAL_MS);
+
+/* ─── Express ─── */
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: "5mb" }));
+
+// Health check
+app.get(["/api/health", "/api/healthz"], (_req, res) => {
+  res.json({ status: "ok", ok: true, sessions: sessions.size, uptime: process.uptime() });
+});
+
+// Create session (sender) – original file share
+const handleCreateSession = (req: express.Request, res: express.Response) => {
+  const ip = getIp(req);
+  if (throttle(ip)) return res.status(429).json({ error: "Too many attempts" });
+
+  const { fileName, fileSize, fileType } = req.body || {};
+  const sessionId = generateId();
+  const token = generateToken();
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+
+  const session: Session = {
+    sessionId,
+    token,
+    otp,
+    fileName: fileName || "Untitled file",
+    fileSize: typeof fileSize === "number" ? fileSize : 0,
+    fileType: fileType || "application/octet-stream",
+    signalingPath: `/api/ws/${sessionId}`,
+    expiresAt,
+    createdAt: Date.now(),
+    senderWs: null,
+    receiverWs: null,
+  };
+
+  sessions.set(sessionId, session);
+  tokenToSession.set(token, sessionId);
+  otpToSession.set(otp, sessionId);
+
+  res.json(sessionPayload(session));
+};
+
+app.post("/api/sessions", handleCreateSession);
+app.post("/api/session", handleCreateSession);
+
+// ── LifeDrop: Create a multi-item session ──
+app.post("/api/lifedrop", (req, res) => {
+  const ip = getIp(req);
+  if (throttle(ip)) return res.status(429).json({ error: "Too many attempts" });
+
+  const { title, items, burnAfterPickup } = req.body || {};
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "LifeDrop requires at least one item." });
+  }
+
+  const sessionId = generateId();
+  const token = generateToken();
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+
+  // Assign IDs to items that don't have one
+  const enrichedItems: LifeDropItem[] = items.map((item: any, idx: number) => ({
+    id: item.id || `ld-${idx}-${Date.now()}`,
+    kind: item.kind || "text",
+    label: item.label || `Item ${idx + 1}`,
+    fileName: item.fileName,
+    fileSize: item.fileSize,
+    fileType: item.fileType,
+    value: item.value,
+    language: item.language,
+  }));
+
+  const totalFileSize = enrichedItems.reduce((sum, item) => sum + (item.fileSize || 0), 0);
+
+  // Summary for the session (use first file or title)
+  const fileItems = enrichedItems.filter((i) => i.kind === "file" || i.kind === "photo");
+  const summaryFileName = title || (fileItems.length === 1 ? fileItems[0].fileName : undefined) || "LifeDrop package";
+  const summaryFileType = fileItems.length === 1 ? (fileItems[0].fileType || "application/octet-stream") : "lifedrop/package";
+
+  const session: Session = {
+    sessionId,
+    token,
+    otp,
+    fileName: summaryFileName,
+    fileSize: totalFileSize,
+    fileType: summaryFileType,
+    signalingPath: `/api/ws/${sessionId}`,
+    expiresAt,
+    createdAt: Date.now(),
+    senderWs: null,
+    receiverWs: null,
+    lifedrop: {
+      title: title || "My LifeDrop",
+      items: enrichedItems,
+      totalFileSize,
+      burnAfterPickup: burnAfterPickup === true,
+      pickedUp: false,
+    },
+  };
+
+  sessions.set(sessionId, session);
+  tokenToSession.set(token, sessionId);
+  otpToSession.set(otp, sessionId);
+
+  res.json(sessionPayload(session));
+});
+
+// Mark LifeDrop as picked up
+app.post("/api/lifedrop/:sessionId/pickup", (req, res) => {
+  const { sessionId } = req.params;
+  const s = sessions.get(sessionId);
+  if (!s || !s.lifedrop) return res.status(404).json({ error: "Not found" });
+  s.lifedrop.pickedUp = true;
+  res.json({ ok: true });
+});
+
+// Verify session (receiver via OTP or QR token)
+app.post("/api/sessions/verify", (req, res) => {
+  const ip = getIp(req);
+  if (throttle(ip)) return res.status(429).json({ error: "Too many attempts" });
+
+  const { token, otp } = req.body || {};
+  let sessionId: string | undefined;
+
+  if (token) {
+    sessionId = tokenToSession.get(String(token).trim());
+  } else if (otp) {
+    sessionId = otpToSession.get(String(otp).trim());
+  }
+
+  if (!sessionId || !sessions.has(sessionId)) {
+    return res.status(404).json({ error: "That code is not active. Check it and try again." });
+  }
+
+  const s = sessions.get(sessionId)!;
+  if (Date.now() - s.createdAt > SESSION_TTL_MS) {
+    destroySession(sessionId);
+    return res.status(404).json({ error: "That code is expired. Check it and try again." });
+  }
+
+  res.json(sessionPayload(s));
+});
+
+// Cancel / delete session
+app.delete("/api/sessions/:sessionId", (req, res) => {
+  const { sessionId } = req.params;
+  destroySession(sessionId);
+  res.json({ ok: true });
+});
+
+// Serve static frontend in production
+if (process.env.NODE_ENV === "production") {
+  const distPath = path.resolve(__dirname, "..", "dist");
+  app.use(express.static(distPath));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+}
+
+/* ─── HTTP + WebSocket ─── */
+const server = http.createServer(app);
+const wss = new WebSocketServer({ noServer: true });
+
+server.on("upgrade", (req, socket, head) => {
+  const parsedUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const pathname = parsedUrl.pathname;
+
+  if (pathname.startsWith("/api/ws") || pathname.startsWith("/ws")) {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit("connection", ws, req);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+wss.on("connection", (ws, req) => {
+  const parsedUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const parts = parsedUrl.pathname.split("/").filter(Boolean);
+  // /api/ws/:sessionId or /ws/:sessionId
+  let sessionId = parsedUrl.searchParams.get("sessionId");
+  if (!sessionId) {
+    if (parts.length >= 3 && parts[0] === "api" && parts[1] === "ws") {
+      sessionId = parts[2];
+    } else if (parts.length >= 2 && parts[0] === "ws") {
+      sessionId = parts[1];
+    }
+  }
+
+  const role = parsedUrl.searchParams.get("role") as "sender" | "receiver" | null;
+  const token = parsedUrl.searchParams.get("token");
+
+  if (!sessionId || !role || !sessions.has(sessionId)) {
+    ws.send(JSON.stringify({ type: "error", message: "Invalid or expired session" }));
+    ws.close();
+    return;
+  }
+
+  const session = sessions.get(sessionId)!;
+  if (token && session.token !== token) {
+    ws.send(JSON.stringify({ type: "error", message: "Invalid session credentials" }));
+    ws.close();
+    return;
+  }
+
+  if (role === "sender") {
+    if (session.senderWs && session.senderWs !== ws && session.senderWs.readyState === WebSocket.OPEN) {
+      session.senderWs.close();
+    }
+    session.senderWs = ws;
+  } else {
+    if (session.receiverWs && session.receiverWs !== ws && session.receiverWs.readyState === WebSocket.OPEN) {
+      session.receiverWs.close();
+    }
+    session.receiverWs = ws;
+  }
+
+  // When receiver connects, notify sender that peer is connected
+  if (
+    session.senderWs &&
+    session.senderWs.readyState === WebSocket.OPEN &&
+    session.receiverWs &&
+    session.receiverWs.readyState === WebSocket.OPEN
+  ) {
+    session.senderWs.send(JSON.stringify({ type: "peer-connected" }));
+  }
+
+  // Relay messages between sender & receiver
+  ws.on("message", (data) => {
+    try {
+      const msgStr = data.toString();
+      const peer = role === "sender" ? session.receiverWs : session.senderWs;
+      if (peer && peer.readyState === WebSocket.OPEN) {
+        peer.send(msgStr);
+      }
+    } catch (e) {
+      console.error("Relay message error:", e);
+    }
+  });
+
+  ws.on("close", () => {
+    const peer = role === "sender" ? session.receiverWs : session.senderWs;
+    if (role === "sender") session.senderWs = null;
+    else session.receiverWs = null;
+
+    if (peer && peer.readyState === WebSocket.OPEN) {
+      peer.send(JSON.stringify({ type: "peer-disconnected", role }));
+    }
+  });
+
+  ws.on("error", (err) => {
+    console.error(`WebSocket error (${role}):`, err.message);
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`🚀 ShareFast signaling server running on http://localhost:${PORT}`);
+});

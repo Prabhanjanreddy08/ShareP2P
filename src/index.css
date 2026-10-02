@@ -1,0 +1,180 @@
+@import "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap";
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Instrument Serif", serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+}
+
+:root {
+  /* Warm cream background with vibrant electric orange accents */
+  --background: hsl(35 25% 97%);
+  --foreground: hsl(24 15% 12%);
+  --primary: hsl(24 15% 12%);
+  --primary-foreground: hsl(35 25% 97%);
+  --secondary: hsl(35 15% 91%);
+  --secondary-foreground: hsl(24 15% 12%);
+  --muted: hsl(35 12% 88%);
+  --muted-foreground: hsl(24 10% 48%);
+  --accent: hsl(24 95% 50%); /* Vibrant Electric Orange */
+  --accent-foreground: hsl(0 0% 100%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(24 15% 12%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(24 15% 12%);
+  --border: hsl(35 12% 76%); /* Crisp visible border */
+  --input: hsl(35 12% 70%);
+  --ring: hsl(24 95% 50%);
+  --destructive: hsl(0 72% 51%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --radius: 0.75rem;
+
+  --sidebar: hsl(35 20% 94%);
+  --sidebar-foreground: hsl(24 15% 12%);
+  --sidebar-border: hsl(35 12% 76%);
+  --sidebar-ring: hsl(24 95% 50%);
+}
+
+.dark {
+  /* Sleek modern obsidian dark mode with radiant electric orange accents */
+  --background: hsl(24 10% 7%);
+  --foreground: hsl(30 15% 94%);
+  --primary: hsl(30 15% 94%);
+  --primary-foreground: hsl(24 10% 7%);
+  --secondary: hsl(24 8% 13%);
+  --secondary-foreground: hsl(30 15% 94%);
+  --muted: hsl(24 8% 16%);
+  --muted-foreground: hsl(24 6% 60%);
+  --accent: hsl(24 95% 53%); /* Radiant Electric Orange */
+  --accent-foreground: hsl(0 0% 100%);
+  --card: hsl(24 8% 11%); /* Solid opaque dark card */
+  --card-foreground: hsl(30 15% 94%);
+  --popover: hsl(24 8% 11%);
+  --popover-foreground: hsl(30 15% 94%);
+  --border: hsl(24 8% 30%); /* Sharp, crisp visible borders */
+  --input: hsl(24 8% 34%);
+  --ring: hsl(24 95% 53%);
+  --destructive: hsl(0 72% 51%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --sidebar: hsl(24 10% 9%);
+  --sidebar-foreground: hsl(30 15% 94%);
+  --sidebar-border: hsl(24 8% 30%);
+  --sidebar-ring: hsl(24 95% 53%);
+}
+
+/* ─── Base styles ─── */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    font-family: var(--font-sans);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-width: 320px;
+  }
+}
+
+/* ─── Design system utilities ─── */
+@utility font-display {
+  font-family: "Instrument Serif", serif;
+}
+@utility font-mono-ui {
+  font-family: "Space Mono", ui-monospace, monospace;
+}
+
+/* ─── Animations ─── */
+@keyframes sf-rise-kf {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes sf-pulse-kf {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.7;
+  }
+}
+@keyframes sf-scan-kf {
+  0%,
+  100% {
+    top: 14%;
+  }
+  50% {
+    top: 82%;
+  }
+}
+
+@utility sf-rise {
+  animation: sf-rise-kf 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@utility sf-rise-1 {
+  animation: sf-rise-kf 0.55s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@utility sf-rise-2 {
+  animation: sf-rise-kf 0.55s 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@utility sf-pulse {
+  animation: sf-pulse-kf 2s ease-in-out infinite;
+}
+@utility sf-scan-line {
+  animation: sf-scan-kf 2.8s ease-in-out infinite;
+}
+@utility sf-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+@utility sf-grid {
+  background-image: radial-gradient(circle, hsl(24 15% 12% / 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
