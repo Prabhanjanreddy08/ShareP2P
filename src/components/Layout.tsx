@@ -13,10 +13,8 @@ export function Layout({ children, className = "" }: { children: React.ReactNode
         data-testid="footer-copyright"
       >
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 sm:flex-row sm:px-8">
-          <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-muted-foreground sm:justify-start">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <span className="font-bold text-accent">ShareFast</span>
-            <span className="text-border">•</span>
-            <span className="text-foreground/90">CopyWrites @prabhanjanreddy year 2026</span>
           </div>
           <p className="font-mono-ui text-[11px] text-muted-foreground/75">
             &copy; 2026 @prabhanjanreddy &middot; All rights reserved
