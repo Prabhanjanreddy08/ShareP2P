@@ -5,10 +5,6 @@ import cors from "cors";
 import crypto from "crypto";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /* ─── Config ─── */
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -290,11 +286,12 @@ app.delete("/api/sessions/:sessionId", (req, res) => {
   res.json({ ok: true });
 });
 
-// Serve static frontend in production (or if dist folder exists)
-const distPath = path.resolve(__dirname, "..", "dist");
+// Serve static frontend in production (or whenever dist exists)
+const distPath = path.resolve(process.cwd(), "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-  app.get("*", (_req, res) => {
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
     res.sendFile(path.join(distPath, "index.html"));
   });
 }
