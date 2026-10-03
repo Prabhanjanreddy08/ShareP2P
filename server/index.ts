@@ -73,6 +73,9 @@ function generateToken(): string {
 }
 
 function getIp(req: express.Request | http.IncomingMessage): string {
+  if ("ip" in req && (req as express.Request).ip) {
+    return (req as express.Request).ip || "unknown";
+  }
   const forwarded = (req.headers["x-forwarded-for"] as string) || "";
   return forwarded.split(",")[0].trim() || (req as any).socket?.remoteAddress || "unknown";
 }
@@ -134,10 +137,17 @@ setInterval(() => {
     // Burn after pickup
     if (s.lifedrop?.burnAfterPickup && s.lifedrop?.pickedUp) destroySession(id);
   }
+  // Clean up expired rate limiting tracking to prevent memory leak
+  for (const [ip, rec] of ipAttempts) {
+    if (now > rec.resetAt) {
+      ipAttempts.delete(ip);
+    }
+  }
 }, CLEAN_INTERVAL_MS);
 
 /* ─── Express ─── */
 const app = express();
+app.set("trust proxy", 1);
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 
@@ -246,8 +256,12 @@ app.post("/api/lifedrop", (req, res) => {
 // Mark LifeDrop as picked up
 app.post("/api/lifedrop/:sessionId/pickup", (req, res) => {
   const { sessionId } = req.params;
+  const token = (req.query.token as string) || req.headers.authorization?.replace(/^Bearer\s+/i, "") || req.body?.token;
   const s = sessions.get(sessionId);
   if (!s || !s.lifedrop) return res.status(404).json({ error: "Not found" });
+  if (!token || s.token !== token) {
+    return res.status(403).json({ error: "Invalid session credentials" });
+  }
   s.lifedrop.pickedUp = true;
   res.json({ ok: true });
 });
@@ -282,6 +296,12 @@ app.post("/api/sessions/verify", (req, res) => {
 // Cancel / delete session
 app.delete("/api/sessions/:sessionId", (req, res) => {
   const { sessionId } = req.params;
+  const token = (req.query.token as string) || req.headers.authorization?.replace(/^Bearer\s+/i, "") || req.body?.token;
+  const s = sessions.get(sessionId);
+  if (!s) return res.json({ ok: true });
+  if (!token || s.token !== token) {
+    return res.status(403).json({ error: "Invalid session credentials" });
+  }
   destroySession(sessionId);
   res.json({ ok: true });
 });
@@ -301,7 +321,7 @@ if (fs.existsSync(distPath)) {
 
 /* ─── HTTP + WebSocket ─── */
 const server = http.createServer(app);
-const wss = new WebSocketServer({ noServer: true });
+const wss = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024 }); // 128KB max payload to prevent memory DoS
 
 server.on("upgrade", (req, socket, head) => {
   const parsedUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
@@ -339,8 +359,8 @@ wss.on("connection", (ws, req) => {
   }
 
   const session = sessions.get(sessionId)!;
-  if (token && session.token !== token) {
-    ws.send(JSON.stringify({ type: "error", message: "Invalid session credentials" }));
+  if (!token || session.token !== token) {
+    ws.send(JSON.stringify({ type: "error", message: "Invalid or missing session credentials" }));
     ws.close();
     return;
   }

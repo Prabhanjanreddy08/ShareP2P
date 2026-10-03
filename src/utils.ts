@@ -78,10 +78,11 @@ export function generateFileId(): string {
  * Download a blob as a file
  */
 export function downloadBlob(blob: Blob, filename: string): void {
+  const safeFilename = filename.replace(/[/\\?%*:|"<>]/g, "_").trim() || "download";
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
+  a.download = safeFilename;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => {

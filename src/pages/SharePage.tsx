@@ -85,7 +85,7 @@ export function SharePage() {
   const handleCancel = async () => {
     if (session) {
       try {
-        await fetch(apiUrl(`/api/sessions/${session.sessionId}`), { method: "DELETE" });
+        await fetch(apiUrl(`/api/sessions/${session.sessionId}?token=${encodeURIComponent(session.token)}`), { method: "DELETE" });
       } catch {}
     }
     cacheActiveFile(null);

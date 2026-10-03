@@ -96,10 +96,11 @@ export function ReceiveSessionPage() {
 
   const handleSave = () => {
     if (!completedFile) return;
+    const safeName = completedFile.fileName.replace(/[/\\?%*:|"<>]/g, "_").trim() || "download";
     const url = URL.createObjectURL(completedFile.blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = completedFile.fileName;
+    a.download = safeName;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };

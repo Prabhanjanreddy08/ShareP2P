@@ -27,6 +27,20 @@ import {
   ClipboardCopy,
 } from "lucide-react";
 
+function getSafeHttpUrl(rawUrl: string): string | null {
+  try {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return null;
+    const url = new URL(trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : `https://${trimmed}`);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.href;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function LifeDropReceivePage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -87,10 +101,10 @@ export function LifeDropReceivePage() {
     return () => client.close();
   }, [session]);
 
-  // Mark as picked up
+  // Mark as picked up with token authentication
   useEffect(() => {
     if (!session) return;
-    fetch(apiUrl(`/api/lifedrop/${session.sessionId}/pickup`), { method: "POST" }).catch(() => {});
+    fetch(apiUrl(`/api/lifedrop/${session.sessionId}/pickup?token=${encodeURIComponent(session.token)}`), { method: "POST" }).catch(() => {});
   }, [session]);
 
   if (!session) {
@@ -118,10 +132,11 @@ export function LifeDropReceivePage() {
 
   const handleSaveFile = () => {
     if (!completedFile) return;
+    const safeName = completedFile.fileName.replace(/[/\\?%*:|"<>]/g, "_").trim() || "download";
     const url = URL.createObjectURL(completedFile.blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = completedFile.fileName;
+    a.download = safeName;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -202,9 +217,9 @@ export function LifeDropReceivePage() {
                   <div className="flex items-start justify-between gap-3">
                     <LifeDropItemCompact item={item} index={0} />
                     <div className="flex shrink-0 gap-1.5">
-                      {item.kind === "url" && item.value && (
+                      {item.kind === "url" && item.value && getSafeHttpUrl(item.value) && (
                         <a
-                          href={item.value}
+                          href={getSafeHttpUrl(item.value)!}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="grid h-8 w-8 place-items-center rounded-lg bg-secondary text-primary hover:bg-accent/15 hover:text-accent"
