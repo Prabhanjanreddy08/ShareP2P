@@ -5,6 +5,7 @@ import { BackButton } from "../components/BackButton";
 import { StatusMessage } from "../components/StatusMessage";
 import { LifeDropItemCard } from "../components/LifeDropItemCard";
 import { formatBytes } from "../components/Formatters";
+import { apiUrl } from "../config";
 import {
   LifeDropItem,
   LifeDropItemKind,
@@ -147,7 +148,7 @@ export function LifeDropCreatePage() {
         language: item.language,
       }));
 
-      const res = await fetch("/api/lifedrop", {
+      const res = await fetch(apiUrl("/api/lifedrop"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

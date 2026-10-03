@@ -10,6 +10,7 @@ import { formatBytes } from "../components/Formatters";
 import { getCachedActiveFile } from "../engine/fileCache";
 import { startPeerConnection, ActiveSession } from "../engine/PeerConnection";
 import { LifeDropItem, LifeDropSession } from "../engine/lifedrop";
+import { apiUrl } from "../config";
 import {
   QrCode,
   Copy,
@@ -104,7 +105,7 @@ export function LifeDropSharePage() {
   const handleCancel = async () => {
     if (session) {
       try {
-        await fetch(`/api/sessions/${session.sessionId}`, { method: "DELETE" });
+        await fetch(apiUrl(`/api/sessions/${session.sessionId}`), { method: "DELETE" });
       } catch {}
     }
     sessionStorage.removeItem("sharefast-active-session");

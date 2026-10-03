@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import jsQR from "jsqr";
 import { PageContainer } from "../components/PageHeader";
 import { StatusMessage } from "../components/StatusMessage";
+import { apiUrl } from "../config";
 import { ScanLine, ArrowRight, ShieldCheck, X, RefreshCw } from "lucide-react";
 
 export function ReceivePage() {
@@ -22,7 +23,7 @@ export function ReceivePage() {
     setError("");
     setIsPending(true);
     try {
-      const res = await fetch("/api/sessions/verify", {
+      const res = await fetch(apiUrl("/api/sessions/verify"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

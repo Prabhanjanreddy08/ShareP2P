@@ -6,6 +6,7 @@ import { FileIcon } from "../components/FileIcon";
 import { StatusMessage } from "../components/StatusMessage";
 import { formatBytes } from "../components/Formatters";
 import { cacheActiveFile, cacheLifeDropFiles } from "../engine/fileCache";
+import { apiUrl } from "../config";
 import { Upload, X, ArrowRight, LockKeyhole, RefreshCw, Plus, Trash2, Files } from "lucide-react";
 
 export function SendPage() {
@@ -62,7 +63,7 @@ export function SendPage() {
         // Single file transfer
         const file = files[0];
         cacheActiveFile(file);
-        const res = await fetch("/api/sessions", {
+        const res = await fetch(apiUrl("/api/sessions"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -96,7 +97,7 @@ export function SendPage() {
           lifedropItems.map((item) => ({ id: item.id, file: item.fileRef }))
         );
 
-        const res = await fetch("/api/lifedrop", {
+        const res = await fetch(apiUrl("/api/lifedrop"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

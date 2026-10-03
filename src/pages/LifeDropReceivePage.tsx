@@ -8,6 +8,7 @@ import { LifeDropItemCompact } from "../components/LifeDropItemCard";
 import { formatBytes } from "../components/Formatters";
 import { startPeerConnection, ActiveSession } from "../engine/PeerConnection";
 import { LifeDropItem, LifeDropSession } from "../engine/lifedrop";
+import { apiUrl } from "../config";
 import {
   LockKeyhole,
   MonitorDown,
@@ -89,7 +90,7 @@ export function LifeDropReceivePage() {
   // Mark as picked up
   useEffect(() => {
     if (!session) return;
-    fetch(`/api/lifedrop/${session.sessionId}/pickup`, { method: "POST" }).catch(() => {});
+    fetch(apiUrl(`/api/lifedrop/${session.sessionId}/pickup`), { method: "POST" }).catch(() => {});
   }, [session]);
 
   if (!session) {

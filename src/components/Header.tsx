@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Radio, Sun, Moon } from "lucide-react";
+import { apiUrl } from "../config";
 
 export function BrandLogo({ compact = false }: { compact?: boolean }) {
   return (
@@ -29,7 +30,7 @@ export function Header() {
   useEffect(() => {
     const check = async () => {
       try {
-        const res = await fetch("/api/healthz");
+        const res = await fetch(apiUrl("/api/healthz"));
         setHealthy(res.ok);
       } catch {
         setHealthy(false);

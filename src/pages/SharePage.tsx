@@ -9,6 +9,7 @@ import { StatusMessage } from "../components/StatusMessage";
 import { formatBytes } from "../components/Formatters";
 import { getCachedActiveFile, cacheActiveFile } from "../engine/fileCache";
 import { startPeerConnection, ActiveSession } from "../engine/PeerConnection";
+import { apiUrl } from "../config";
 import { QrCode, Copy, Check, LockKeyhole, X, Radio, ArrowRight, Upload } from "lucide-react";
 
 export function SharePage() {
@@ -84,7 +85,7 @@ export function SharePage() {
   const handleCancel = async () => {
     if (session) {
       try {
-        await fetch(`/api/sessions/${session.sessionId}`, { method: "DELETE" });
+        await fetch(apiUrl(`/api/sessions/${session.sessionId}`), { method: "DELETE" });
       } catch {}
     }
     cacheActiveFile(null);

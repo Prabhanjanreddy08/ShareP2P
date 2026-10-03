@@ -1,3 +1,5 @@
+import { BACKEND_URL } from "../config";
+
 export interface ActiveSession {
   sessionId: string;
   token: string;
@@ -90,8 +92,10 @@ function waitBufferedAmountLow(channel: RTCDataChannel): Promise<void> {
 }
 
 function getWebSocketUrl(session: ActiveSession, role: "sender" | "receiver"): string {
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = window.location.host;
+  const base = BACKEND_URL || window.location.origin;
+  const url = new URL(base, window.location.origin);
+  const protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  const host = url.host;
   const path = session.signalingPath.startsWith("/") ? session.signalingPath : `/${session.signalingPath}`;
   return `${protocol}//${host}${path}?token=${encodeURIComponent(session.token)}&role=${encodeURIComponent(role)}`;
 }
