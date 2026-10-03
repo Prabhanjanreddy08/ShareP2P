@@ -15,8 +15,8 @@ import {
 export function HomePage() {
   return (
     <Layout>
-      <main className="mx-auto flex w-full max-w-6xl flex-col px-5 pb-16 pt-10 sm:px-8 sm:pt-16">
-        <section className="grid items-end gap-12 lg:grid-cols-[1.1fr_.9fr] lg:gap-20">
+      <main className="mx-auto flex w-full max-w-6xl min-w-0 flex-col px-5 pb-16 pt-10 sm:px-8 sm:pt-16">
+        <section className="grid w-full min-w-0 items-end gap-12 lg:grid-cols-[1.1fr_.9fr] lg:gap-20">
           <div className="sf-rise">
             <div className="mb-7 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-accent">
               <span className="h-2 w-2 rounded-full bg-accent" />

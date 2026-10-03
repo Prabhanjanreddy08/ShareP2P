@@ -151,9 +151,9 @@ export function LifeDropSharePage() {
       title={<>Your drop is<br /><em>ready to go.</em></>}
       description="Have the other device scan this code. Text items transfer instantly — files go peer-to-peer."
     >
-      <div className="mt-10 grid items-start gap-5 lg:grid-cols-[.85fr_1.15fr]">
+      <div className="mt-10 grid w-full min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         {/* Left Column: QR + OTP (compact height, identical to Image 2) */}
-        <div className="sf-rise sf-rise-1 flex flex-col items-center self-start rounded-[1.6rem] bg-primary p-6 text-background sm:p-8 lg:sticky lg:top-8">
+        <div className="sf-rise sf-rise-1 flex w-full min-w-0 flex-col items-center self-start rounded-[1.6rem] bg-primary p-6 text-background sm:p-8 lg:sticky lg:top-8">
           <div className="mb-5 flex w-full items-center justify-between text-xs text-background/60">
             <span className="font-mono-ui uppercase tracking-[.12em]">Scan to pick up</span>
             <QrCode size={17} />
@@ -182,19 +182,19 @@ export function LifeDropSharePage() {
         </div>
 
         {/* Right Column: Package summary */}
-        <div className="sf-rise sf-rise-2 space-y-4">
+        <div className="sf-rise sf-rise-2 w-full min-w-0 space-y-4">
           {/* Package header */}
-          <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-3">
+          <div className="w-full min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <div className="flex w-full min-w-0 items-start justify-between gap-4">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
                   <Package size={20} />
                 </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-primary">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-primary" title={session.lifedrop?.title || "LifeDrop"}>
                     {session.lifedrop?.title || "LifeDrop"}
                   </p>
-                  <p className="mt-1 font-mono-ui text-[10px] text-muted-foreground">
+                  <p className="mt-1 truncate font-mono-ui text-[10px] text-muted-foreground">
                     {(session.lifedrop?.items || []).length} items
                     {session.lifedrop?.totalFileSize ? ` · ${formatBytes(session.lifedrop.totalFileSize)} files` : ""}
                   </p>
@@ -216,7 +216,7 @@ export function LifeDropSharePage() {
           </div>
 
           {/* Item list */}
-          <div className="max-h-[300px] space-y-2 overflow-y-auto rounded-2xl border border-border bg-card p-4">
+          <div className="max-h-[300px] w-full min-w-0 space-y-2 overflow-y-auto rounded-2xl border border-border bg-card p-4">
             {(session.lifedrop?.items || []).map((item, idx) => (
               <LifeDropItemCompact key={item.id} item={item} index={idx} />
             ))}
@@ -246,12 +246,12 @@ export function LifeDropSharePage() {
           {statusMessage && (
             <StatusMessage tone={status === "error" ? "error" : "quiet"}>
               <Radio size={14} className="mt-0.5 shrink-0" />
-              {statusMessage}
+              <span className="break-words">{statusMessage}</span>
             </StatusMessage>
           )}
 
           {/* Actions */}
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid w-full min-w-0 gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => handleCopy(qrUrl, "link")}
@@ -270,8 +270,8 @@ export function LifeDropSharePage() {
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <LockKeyhole size={14} className="text-accent" />
-            Text items travel via the signaling channel. File bytes go peer-to-peer.
+            <LockKeyhole size={14} className="shrink-0 text-accent" />
+            <span className="truncate">Text items travel via the signaling channel. File bytes go peer-to-peer.</span>
           </div>
         </div>
       </div>

@@ -190,7 +190,7 @@ export function LifeDropCreatePage() {
 
   return (
     <Layout>
-      <main className="mx-auto w-full max-w-4xl px-5 pb-20 pt-8 sm:px-8 sm:pt-12">
+      <main className="mx-auto w-full max-w-4xl min-w-0 px-4 pb-20 pt-8 sm:px-8 sm:pt-12">
         <BackButton />
         <div className="sf-rise">
           <span className="font-mono-ui text-[10px] font-bold uppercase tracking-[.18em] text-accent">

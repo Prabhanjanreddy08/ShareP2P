@@ -133,14 +133,14 @@ export function ReceiveSessionPage() {
           : "The devices are paired. The transfer starts automatically over the direct link."
       }
     >
-      <div className="mt-10 grid gap-5 lg:grid-cols-[1.15fr_.85fr]">
+      <div className="mt-10 grid w-full min-w-0 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         {/* Left Column: File & transfer progress */}
-        <div className="sf-rise sf-rise-1 rounded-[1.6rem] border border-border bg-card p-6 sm:p-8">
-          <div className="flex items-start gap-4">
+        <div className="sf-rise sf-rise-1 w-full min-w-0 rounded-[1.6rem] border border-border bg-card p-6 sm:p-8">
+          <div className="flex w-full min-w-0 items-start gap-4">
             <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-secondary text-primary">
               <FileIcon type={session.fileType} size={26} />
             </span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="break-all text-xl font-bold tracking-[-.03em] text-primary" data-testid="text-receive-file">
                 {session.fileName}
               </p>
@@ -176,7 +176,7 @@ export function ReceiveSessionPage() {
             <div className="mt-4">
               <StatusMessage tone={status === "error" || status === "disconnected" ? "error" : "quiet"}>
                 <Radio size={14} className="mt-0.5 shrink-0" />
-                {statusMessage}
+                <span className="break-words">{statusMessage}</span>
               </StatusMessage>
             </div>
           )}
@@ -212,7 +212,7 @@ export function ReceiveSessionPage() {
         </div>
 
         {/* Right Column: Lane info */}
-        <div className="sf-rise sf-rise-2 rounded-[1.6rem] bg-secondary p-6 sm:p-8">
+        <div className="sf-rise sf-rise-2 w-full min-w-0 rounded-[1.6rem] bg-secondary p-6 sm:p-8">
           <div className="flex items-center justify-between">
             <span className="font-mono-ui text-[10px] uppercase tracking-[.15em] text-muted-foreground">
               Private lane

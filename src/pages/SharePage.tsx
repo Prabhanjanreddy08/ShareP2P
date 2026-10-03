@@ -137,9 +137,9 @@ export function SharePage() {
       }
       description="Have the other device scan this code, or send the six-digit code another way."
     >
-      <div className="mt-10 grid items-start gap-5 lg:grid-cols-[.85fr_1.15fr]">
+      <div className="mt-10 grid w-full min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         {/* Left Column: QR Code + One-time code */}
-        <div className="sf-rise sf-rise-1 flex flex-col items-center self-start rounded-[1.6rem] bg-primary p-6 text-background sm:p-8 lg:sticky lg:top-8">
+        <div className="sf-rise sf-rise-1 flex w-full min-w-0 flex-col items-center self-start rounded-[1.6rem] bg-primary p-6 text-background sm:p-8 lg:sticky lg:top-8">
           <div className="mb-5 flex w-full items-center justify-between text-xs text-background/60">
             <span className="font-mono-ui uppercase tracking-[.12em]">Scan to pair</span>
             <QrCode size={17} />
@@ -169,18 +169,18 @@ export function SharePage() {
         </div>
 
         {/* Right Column: File details, Transfer Status, Actions */}
-        <div className="sf-rise sf-rise-2 space-y-5">
-          <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-3">
+        <div className="sf-rise sf-rise-2 w-full min-w-0 space-y-5">
+          <div className="w-full min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <div className="flex w-full min-w-0 items-start justify-between gap-4">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
                   <FileIcon type={session.fileType} />
                 </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-primary" data-testid="text-share-file">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-primary" title={session.fileName} data-testid="text-share-file">
                     {session.fileName}
                   </p>
-                  <p className="mt-1 font-mono-ui text-[10px] text-muted-foreground">
+                  <p className="mt-1 truncate font-mono-ui text-[10px] text-muted-foreground">
                     {formatBytes(session.fileSize)} / {session.fileType || "file"}
                   </p>
                 </div>
@@ -189,7 +189,8 @@ export function SharePage() {
             </div>
 
             <div className="mt-5 flex items-center gap-2 rounded-xl bg-secondary px-3 py-2.5 text-xs text-muted-foreground">
-              <LockKeyhole size={14} className="text-accent" /> File bytes travel device to device.
+              <LockKeyhole size={14} className="shrink-0 text-accent" />
+              <span className="truncate">File bytes travel device to device.</span>
             </div>
           </div>
 
@@ -216,8 +217,8 @@ export function SharePage() {
           {statusMessage && (
             <StatusMessage tone={status === "error" ? "error" : "quiet"}>
               <Radio size={14} className="mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <span>{statusMessage}</span>
+              <div className="min-w-0 flex-1">
+                <span className="break-words">{statusMessage}</span>
                 {!file && (
                   <div className="mt-3">
                     <input
@@ -245,7 +246,7 @@ export function SharePage() {
             </StatusMessage>
           )}
 
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid w-full min-w-0 gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => handleCopy(qrUrl, "link")}
@@ -266,10 +267,11 @@ export function SharePage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <LockKeyhole size={14} className="text-accent" /> File bytes never touch the signaling server
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <LockKeyhole size={14} className="shrink-0 text-accent" />
+              <span className="truncate">File bytes never touch the signaling server</span>
             </span>
-            <span className="font-mono-ui">signal {session.signalingPath}</span>
+            <span className="font-mono-ui max-w-full break-all text-[11px]">signal {session.signalingPath}</span>
           </div>
         </div>
       </div>

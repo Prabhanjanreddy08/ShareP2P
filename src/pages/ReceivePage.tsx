@@ -139,9 +139,9 @@ export function ReceivePage() {
       }
       description="Scan the sender’s code with your camera, or enter the one-time code below."
     >
-      <div className="mt-10 grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+      <div className="mt-10 grid w-full min-w-0 gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         {/* Left Column: QR Scanner Card */}
-        <div className="sf-rise sf-rise-1 overflow-hidden rounded-[1.6rem] bg-primary p-5 text-background sm:p-7">
+        <div className="sf-rise sf-rise-1 w-full min-w-0 overflow-hidden rounded-[1.6rem] bg-primary p-5 text-background sm:p-7">
           {cameraActive ? (
             <div className="relative min-h-[300px] overflow-hidden rounded-xl bg-[#161412]">
               <video
@@ -187,14 +187,14 @@ export function ReceivePage() {
             <div className="mt-3">
               <StatusMessage tone="error">
                 <X size={14} className="mt-0.5 shrink-0" />
-                {error}
+                <span className="break-words">{error}</span>
               </StatusMessage>
             </div>
           )}
         </div>
 
         {/* Right Column: Code input Card */}
-        <div className="sf-rise sf-rise-2 flex flex-col justify-center rounded-[1.6rem] border border-border bg-card p-6 sm:p-8">
+        <div className="sf-rise sf-rise-2 flex w-full min-w-0 flex-col justify-center rounded-[1.6rem] border border-border bg-card p-6 sm:p-8">
           <div className="mb-6 flex items-center gap-2 text-xs font-bold uppercase tracking-[.16em] text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Or use a code
           </div>
@@ -219,7 +219,7 @@ export function ReceivePage() {
             <div className="mt-4">
               <StatusMessage tone="error">
                 <X size={14} className="mt-0.5 shrink-0" />
-                {error}
+                <span className="break-words">{error}</span>
               </StatusMessage>
             </div>
           )}
